@@ -6,16 +6,21 @@ readsfile=$1
 databasefile=$2
 lastindexfile=$3
 
+source activate rgienv
+
 lastal -s 2 -T 0 -Q 0 -a 1 $lastindexfile $readsfile > $readsfile.last.txt
 maf-convert sam $readsfile.last.txt > $readsfile.sam
 
 samtools view -T $databasefile -bS $readsfile.sam > $readsfile.bam
-samtools sort $readsfile.bam $readsfile.bam.sorted
-samtools index $readsfile.bam.sorted.bam
+samtools sort $readsfile.bam -o $readsfile.sorted.bam
+samtools index $readsfile.sorted.bam
 
-samtools mpileup -uf $databasefile $readsfile.bam.sorted.bam | bcftools view -cg - | perl vcfutils.pl vcf2fq > $readsfile.$databasefile.cns.fq
+# samtools mpileup -uf $databasefile $readsfile.sorted.bam |  ~/bcftools/bcftools view -cg - | perl vcfutils.pl vcf2fq > $readsfile.$databasefile.cns.fq
+samtools mpileup -uf $databasefile $readsfile.sorted.bam | ~/bcftools/bcftools call -c | ~/bcftools/misc/vcfutils.pl vcf2fq > $readsfile.$databasefile.cns.fq
 
-python fastq2fasta.py $readsfile.$databasefile.cns.fq $readsfile.$databasefile.cns.fasta
+#python fastq2fasta.py $readsfile.$databasefile.cns.fq $readsfile.$databasefile.cns.fasta
+seqtk seq -A  marc3_DOWN1.sample.card.cns.fq >  marc3_DOWN1.sample.card.cns.fasta
+
 makeblastdb -in $databasefile -dbtype nucl
 blastn -num_threads 8 -query $readsfile.$databasefile.cns.fasta -db $databasefile -max_target_seqs 1 -outfmt 5 > $readsfile.$databasefile.for.xml
 blastn -num_threads 8 -query $readsfile -db $databasefile -outfmt 5 -max_target_seqs 1 > $readsfile.full.$databasefile.xml
