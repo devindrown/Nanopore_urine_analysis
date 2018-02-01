@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 # Requires last, blast+, samtools 0.1.18 or samtools 0.1.19
 
@@ -8,6 +8,7 @@ lastindexfile=$3
 
 source activate rgienv
 
+# assumes that LAST db is already complete lastdb -Q 0 CARDdb resistancegenesdatabasefile
 lastal -s 2 -T 0 -Q 0 -a 1 $lastindexfile $readsfile > $readsfile.last.txt
 maf-convert sam $readsfile.last.txt > $readsfile.sam
 
@@ -19,11 +20,14 @@ samtools index $readsfile.sorted.bam
 samtools mpileup -uf $databasefile $readsfile.sorted.bam | ~/bcftools/bcftools call -c | ~/bcftools/misc/vcfutils.pl vcf2fq > $readsfile.$databasefile.cns.fq
 
 #python fastq2fasta.py $readsfile.$databasefile.cns.fq $readsfile.$databasefile.cns.fasta
-seqtk seq -A  marc3_DOWN1.sample.card.cns.fq >  marc3_DOWN1.sample.card.cns.fasta
+seqtk seq -A  $readsfile.$databasefile.cns.fq >  $readsfile.$databasefile.cns.fasta
 
-makeblastdb -in $databasefile -dbtype nucl
+# Assumes that blastDB is already complete
+# makeblastdb -in $databasefile -dbtype nucl
 blastn -num_threads 8 -query $readsfile.$databasefile.cns.fasta -db $databasefile -max_target_seqs 1 -outfmt 5 > $readsfile.$databasefile.for.xml
-blastn -num_threads 8 -query $readsfile -db $databasefile -outfmt 5 -max_target_seqs 1 > $readsfile.full.$databasefile.xml
+
+# for complete set
+# blastn -num_threads 8 -query $readsfile -db $databasefile -outfmt 5 -max_target_seqs 1 > $readsfile.full.$databasefile.xml
 
 makeblastdb -in $readsfile.$databasefile.cns.fasta -dbtype nucl
 blastn -num_threads 8 -query $databasefile -db $readsfile.$databasefile.cns.fasta -max_target_seqs 1 -outfmt 5 > $readsfile.$databasefile.rev.xml
@@ -37,3 +41,6 @@ python BDBH.py > listofins
 while read line; do grep $line totfrontway.txt; done < listofins | awk '{print($NF""$0)}' | sort -k1,1n -t' ' | cut -f1- -d' ' > finreadout.txt
 cat finreadout.txt | uniq -c > finalreadout.txt
 python tidyfinalout.py > Antibioticresistanceoutputfor.$readsfile.txt
+
+source deactivate
+
