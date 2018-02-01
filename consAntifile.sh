@@ -17,7 +17,7 @@ samtools sort $readsfile.bam -o $readsfile.sorted.bam
 samtools index $readsfile.sorted.bam
 
 # samtools mpileup -uf $databasefile $readsfile.sorted.bam |  ~/bcftools/bcftools view -cg - | perl vcfutils.pl vcf2fq > $readsfile.$databasefile.cns.fq
-samtools mpileup -uf $databasefile $readsfile.sorted.bam | ~/bcftools/bcftools call -c | ~/bcftools/misc/vcfutils.pl vcf2fq > $readsfile.$databasefile.cns.fq
+samtools mpileup -uf $databasefile $readsfile.sorted.bam | ~/bcftools/bcftools call -c --ploidy 1 | ~/bcftools/misc/vcfutils.pl vcf2fq > $readsfile.$databasefile.cns.fq
 
 #python fastq2fasta.py $readsfile.$databasefile.cns.fq $readsfile.$databasefile.cns.fasta
 seqtk seq -A  $readsfile.$databasefile.cns.fq >  $readsfile.$databasefile.cns.fasta
